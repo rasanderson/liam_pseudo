@@ -45,3 +45,36 @@ colnames(all_nvc) <- c("full_nvc_code", "nvc_name", "comm_level_code",
 # habitat level for ordination purposes
 no_of_nvcs <- length(unique(all_nvc$comm_level_code))
 no_of_habitats <- length(unique(all_nvc$habitat))
+habitat_names  <- unique(all_nvc$habitat)
+
+# Begin by creating 3 pseudo-quads for each habitat, select a community at 
+# random for a given habitat
+set.seed(123)
+pseudos_per_habitat <- 3
+for(this_habitat in habitat_names){
+  print(this_habitat)
+  # Select NVC at random within that habitat
+  data_this_habitat <- filter(all_nvc, habitat == this_habitat)
+  nvc_names_this_habitat <- unique(data_this_habitat$full_nvc_code)
+  # print(nvc_names_this_habitat)
+  rnd_nvc_names <- sample(nvc_names_this_habitat, pseudos_per_habitat, replace = TRUE)
+  
+  # Generate a random quadrat for each habitat in rnd_nvc_names
+  for(rnd_nvc in rnd_nvc_names){
+    rnd_nvc_record <- filter(data_this_habitat, full_nvc_code == rnd_nvc)
+    print(rnd_nvc_record)
+    const_prob <- runif(1)
+    print(const_prob)
+    if(const_prob >= 0.8 ){
+      print("Need constancy level V")
+    } else if (const_prob >= 0.6 && const_prob < 0.8){
+      print("Need constancy level IV")
+    } else if (const_prob >= 0.4 && const_prob < 0.6){
+      print("Need constancy level III")
+    } else if (const_prob >= 0.2 && const_prob < 0.4){
+      print("Need constancy level II")
+    } else if (const_prob < 0.2){
+      print("Need constancy level I")
+    }
+  }
+}
