@@ -1,8 +1,12 @@
 # Generate habitat-level pseudo quads
 library(tidyverse)
+library(readxl)
+
 rm(list=ls())
 
-all_nvc <- read_csv("data/NVC_Floristic_Table.csv")
+all_nvc <- read_excel("data/NVC-floristic-tables.xls",
+                      col_types = c("numeric", rep("text", 5), rep("numeric", 2)),
+                      range = cell_cols("A:H"))
 all_nvc <- all_nvc[, -1] # Do not need row number
 
 
@@ -17,20 +21,13 @@ all_nvc <- all_nvc[, -1] # Do not need row number
 # in international comparators? i.e. need to have as generalisable a method as
 # possible.
 # S4e and S4f do not have sub-community names in spreadsheet; Correct them here:
-all_nvc$`Community or sub-community name`[all_nvc$`Community or sub-community code` == "S4e"] <-
-  "Phragmites australis S4e" # Once book online add correct sub-community
-all_nvc$`Community or sub-community name`[all_nvc$`Community or sub-community code` == "S4f"] <-
-  "Phragmites australis S4f" # Once book online add correct sub-community
 
 # Cannot drop sub-communities given some lack main community.
 # Do not use spp_per_sample due to inconsistencies in database and lack of
 # generalisability to international classifications
 
-all_nvc <- filter(all_nvc, !`Species name or special variable` == "Number of species per sample")
-all_nvc <- filter(all_nvc, !`Species name or special variable` == "Vegetation height cm")
-all_nvc <- filter(all_nvc, !`Species name or special variable` == "Mean total cover")
-all_nvc <- filter(all_nvc, !is.na(`Maximum abundance of species`))
-all_nvc <- select(all_nvc, -`Special variable value`)
+all_nvc <- filter(all_nvc, is.na(`Special variable value`))
+all_nvc <- all_nvc[, -7]
 all_nvc <- mutate(all_nvc, habitat = sub("^([[:alpha:]]*).*", "\\1",
                                            all_nvc$`Community level code`))
 all_nvc <- mutate(all_nvc,
@@ -39,9 +36,12 @@ all_nvc <- mutate(all_nvc,
                                          `Species constancy value` == "III" ~ 0.6,
                                          `Species constancy value` == "IV" ~ 0.8,
                                          `Species constancy value` == "V" ~ 1))
-
+all_nvc <- all_nvc[,- 5]
+# Simplify names for ease of coding
+colnames(all_nvc) <- c("full_nvc_code", "nvc_name", "comm_level_code",
+                       "spp_name", "domin", "habitat", "max_const")
 
 # Create random main habitats; done at NVC main level but will be grouped at
 # habitat level for ordination purposes
-no_of_nvcs <- length(unique(all_nvc$`Community or sub-community code`))
+no_of_nvcs <- length(unique(all_nvc$comm_level_code))
 no_of_habitats <- length(unique(all_nvc$habitat))
