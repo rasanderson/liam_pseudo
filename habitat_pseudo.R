@@ -62,7 +62,7 @@ for(this_habitat in habitat_names){
   # Generate a random quadrat for each habitat in rnd_nvc_names
   for(rnd_nvc in rnd_nvc_names){
     rnd_nvc_record <- filter(data_this_habitat, full_nvc_code == rnd_nvc)
-    print(rnd_nvc_record)
+    #print(rnd_nvc_record)
     const_prob <- runif(1)
     print(const_prob)
     if(const_prob >= 0.8 ){
