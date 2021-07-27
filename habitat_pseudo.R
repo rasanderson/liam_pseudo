@@ -1,6 +1,7 @@
 # Generate habitat-level pseudo quads
 library(tidyverse)
 library(readxl)
+set.seed(123)
 
 rm(list=ls())
 
@@ -47,12 +48,12 @@ no_of_nvcs <- length(unique(all_nvc$comm_level_code))
 no_of_habitats <- length(unique(all_nvc$habitat))
 habitat_names  <- unique(all_nvc$habitat)
 
-# Begin by creating 3 pseudo-quads for each habitat, select a community at 
+# Begin by creating a few pseudo-quads for each habitat, select a community at 
 # random for a given habitat
-set.seed(123)
 pseudos_per_habitat <- 3
-for(this_habitat in habitat_names){
-  print(this_habitat)
+pseudo_quad_data <- NULL
+pseudo_quad_no   <- 1
+for(this_habitat in habitat_names){ # Each habitat
   # Select NVC at random within that habitat
   data_this_habitat <- filter(all_nvc, habitat == this_habitat)
   nvc_names_this_habitat <- unique(data_this_habitat$full_nvc_code)
@@ -60,21 +61,39 @@ for(this_habitat in habitat_names){
   rnd_nvc_names <- sample(nvc_names_this_habitat, pseudos_per_habitat, replace = TRUE)
   
   # Generate a random quadrat for each habitat in rnd_nvc_names
-  for(rnd_nvc in rnd_nvc_names){
+  for(rnd_nvc in rnd_nvc_names){ # randomly selected NVC in habitat
     rnd_nvc_record <- filter(data_this_habitat, full_nvc_code == rnd_nvc)
-    #print(rnd_nvc_record)
+    rnd_nvc_record <- mutate(rnd_nvc_record, spp_chosen = FALSE)
+    rnd_nvc_record <- mutate(rnd_nvc_record, pseudo_code = pseudo_quad_no)
     const_prob <- runif(1)
-    print(const_prob)
-    if(const_prob >= 0.8 ){
-      print("Need constancy level V")
-    } else if (const_prob >= 0.6 && const_prob < 0.8){
-      print("Need constancy level IV")
-    } else if (const_prob >= 0.4 && const_prob < 0.6){
-      print("Need constancy level III")
-    } else if (const_prob >= 0.2 && const_prob < 0.4){
-      print("Need constancy level II")
-    } else if (const_prob < 0.2){
-      print("Need constancy level I")
-    }
+    pct_cover <- 0
+    print(paste0("Select random NVC: ", rnd_nvc))
+    while(pct_cover < 100){
+      if(all(rnd_nvc_record$spp_chosen) == TRUE){
+        pct_cover <- 100
+      }
+      rnd_spp_no <- sample(1:nrow(rnd_nvc_record), 1)
+      if(rnd_nvc_record$spp_chosen[rnd_spp_no] == FALSE){
+        const_prob <- runif(1)
+        if(const_prob <= rnd_nvc_record$max_const[rnd_spp_no]){
+          cover_rnd_pct <- runif(1) * 100
+          spp_pct_max <- rnd_nvc_record$domin[rnd_spp_no]^2.6/4 # Currall Domin 2.6
+          if(cover_rnd_pct <= spp_pct_max){
+            rnd_nvc_record$spp_chosen[rnd_spp_no] <- TRUE
+            pred_spp_cover <- cover_rnd_pct
+            pct_cover <- pct_cover + pred_spp_cover
+            pseudo_record <- data.frame(psuedo_id = pseudo_quad_no,
+                                        spp_id = rnd_nvc_record$domin[rnd_spp_no],
+                                        spp_name = rnd_nvc_record$spp_name[rnd_spp_no],
+                                        spp_pct = pred_spp_cover,
+                                        nvc_code = rnd_nvc,
+                                        habitat_code = this_habitat)
+            pseudo_quad_data <- rbind(pseudo_quad_data, pseudo_record)
+          } # End pct cover
+        } # End constancy
+      } # End check on with critical constancy reached
+    } # End pseudoquad
+    pseudo_quad_no <- pseudo_quad_no + 1
   }
 }
+
