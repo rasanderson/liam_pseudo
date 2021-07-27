@@ -97,3 +97,10 @@ for(this_habitat in habitat_names){ # Each habitat
   }
 }
 
+# Cannot implement make.cepnames until turned into wide format
+#library(vegan)
+#pseudo_quad_data <- mutate(pseudo_quad_data, abbrname = make.cepnames(spp_name))
+pseudo_quad_data2 <- pseudo_quad_data[, c(1, 3, 4)]
+pseudo_quad_data_wde <- pivot_wider(pseudo_quad_data2, values_from = spp_pct,
+                                    names_from = spp_name,
+                                    values_fill = 0)
