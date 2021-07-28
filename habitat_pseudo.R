@@ -122,15 +122,24 @@ ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap2, shape = habitat, colour = habi
   theme_classic()
 
 # Group by habitat
-pseudo_umap_lyt %>% 
+habitat_umap <- pseudo_umap_lyt %>% 
   group_by(habitat) %>% 
   summarise(mean_umap1 = mean(umap1), mean_umap2 = mean(umap2),
             se_umap1 = sd(umap1)/sqrt(pseudos_per_habitat),
-            se_umap2 = sd(umap2)/sqrt(pseudos_per_habitat)) %>% 
-  ggplot(aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
-         geom_point(size = 3) +
-         geom_errorbar(xmin = mean_umap1 - se_umap1, xmax = mean_umap1 + se_umap1,
-                       ymin = mean_umap2 - se_umap2, xmax = mean_umap2 + se_umap2)
-         scale_shape_manual(values = 11:22) +
-         theme_classic()
+            se_umap2 = sd(umap2)/sqrt(pseudos_per_habitat),
+            ci_umap1 = qt(0.05/2, pseudos_per_habitat-1, lower.tail=FALSE) * se_umap1,
+            ci_umap2 = qt(0.05/2, pseudos_per_habitat-1, lower.tail=FALSE) * se_umap2)
+            
+ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(xmin = mean_umap1 - se_umap1, xmax = mean_umap1 + se_umap1)) +
+  geom_errorbar(aes(ymin = mean_umap2 - se_umap2, ymax = mean_umap2 + se_umap2)) +
+  scale_shape_manual(values = 11:22) +
+  theme_classic()
 
+ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
+  geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
+  scale_shape_manual(values = 11:22) +
+  theme_classic()
