@@ -103,8 +103,9 @@ pseudoquad_data2 <- pseudoquad_data[, c(1, 3, 4)]
 pseudoquad_data_wde <- pivot_wider(pseudoquad_data2, values_from = spp_pct,
                                     names_from = spp_name,
                                     values_fill = 0)
-colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
 pseudoquad_data_wde <- pseudoquad_data_wde[, -1]
+pseudoquad_data_wde <- pseudoquad_data_wde[, sort(colnames(pseudoquad_data_wde))]
+colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
 
 pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
 plot(pseudo_pca, display = "sites")
@@ -143,3 +144,84 @@ ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour
   geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
   scale_shape_manual(values = 11:22) +
   theme_classic()
+
+# Check the Ashtrees data
+ash <- read.csv("data/Ashtrees_perc_final.csv")
+ash <- ash[, -1]
+# Ensure abbreviated names match
+# pseudonam <- colnames(pseudoquad_data_wde)
+# View(sort(pseudonam))
+# ashnam <- colnames(ash)
+# View(sort(ashnam))
+# Agrostis_spp to Agrocapi in Ashtrees;
+#   Recode to Agrocapi adding values together
+ash[, "Agrocapi"] <- ash[, "Agrocapi"] + ash[, "Agrostis_spp"]
+ash <- subset(ash, select = -Agrostis_spp)
+# Carepani listed as Carepani and Carepani.1 in pseudos and Carepanic in ash;
+#   pseudos Carepani=Carex panicea, Carepani.1=Carex paniculata; ash is panicea
+colnames(ash)[colnames(ash)=="Carepanic"] <- "Carepani"
+# Carex_spp needs changing;
+#   Only one record with low abundance so delete
+ash <- subset(ash, select = -Carex_spp)
+# Dricscop missing from pseudos. Check name change
+#   This is actually Dicranum scopularium so recode to Dicrscop
+colnames(ash)[colnames(ash)=="Cricscop"] <- "Dicrscop"
+# Durodili missing from pseudos. Check name change
+#   Recode to Dryodila
+colnames(ash)[colnames(ash)=="Durodili"] <- "Dryodila"
+# Festrubr missing from pseudos. Check name change or Festagg
+#   Unclear why not in pseudos. Consider recoding to Festagg or Festovin
+colnames(ash)[colnames(ash)=="Festrubr"] <- "Festagg"
+# Hylosple and Hylosple.1 in Ashtrees
+#   Add Hylosple.1 to Hylosple in Ashtrees
+ash[, "Hylosple"] <- ash[, "Hylosple"] + ash[, "Hylosple.1"]
+ash <- subset(ash, select = -Hylosple.1)
+# Spelling on Hypnjutu Hypnjutl
+#   Recode in Ashtrees to Hypnjutl
+colnames(ash)[colnames(ash)=="Hypnjutu"] <- "Hypnjutl"
+# Plagundu listed as Plagiotundu in ash
+#   Recode to Plagundu
+colnames(ash)[colnames(ash)=="Plagiotundu"] <- "Plagundu"
+# Poaprat missing from pseudos. Check name change
+#   Exists in NVC floristics table but not selected. Delete from Ashtrees
+ash <- subset(ash, select = -Poaprat)
+# Rumex acetosa and acetosella need checking
+#   Put pseudos alphabetically before cepname to avoid ambiguity
+#   In pseudos Rumeacet=Rumex acetosa, Rumeacet.1=Rumex acetosella
+#   Ash should already be in this order
+# Sphafall not in pseudos. Check name change
+#   Recode to Spharecu.
+colnames(ash)[colnames(ash)=="Sphafall"] <- "Spharecu"
+# sphapalu lower case s in Ashtrees
+#   Reocde to Sphapalu
+colnames(ash)[colnames(ash)=="sphapalu"] <- "Sphapalu"
+# Stelalsi not in pseudos but check Stelagg
+#   Only couple of records and delete from Ashtrees
+ash <- subset(ash, select = -Stelalsi)
+# Taraxacu needs checking in ash and pseudos
+#   Presumsably Taraoffi but not clear why coded differently. Safer to omit couple of records.
+ash <- subset(ash, select = -Taraxacu)
+
+
+
+ash_pred <- predict(pseudo_umap, ash)
+
+
+# Iris check
+data(iris)
+iris.data = iris[, grep("Sepal|Petal", colnames(iris))]
+iris.labels = iris[, "Species"]
+iris.umap = umap(iris.data)
+iris_lyt <- data.frame(iris.umap$layout)
+iris_lyt <- cbind(iris_lyt, iris.labels)
+
+ggplot(iris_lyt, aes(x=X1, y=X2, colour=iris.labels)) +
+  geom_point() +
+  theme_classic()
+
+iris.wnoise = iris.data + matrix(rnorm(150*40, 0, 0.1), ncol=4)
+colnames(iris.wnoise) = colnames(iris.data)
+head(iris.wnoise, 3)
+
+iris.wnoise.umap = predict(iris.umap, iris.wnoise[,-1])
+head(iris.wnoise.umap, 3)
