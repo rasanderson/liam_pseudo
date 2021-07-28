@@ -50,7 +50,7 @@ habitat_names  <- unique(all_nvc$habitat)
 
 # Begin by creating a few pseudo-quads for each habitat, select a community at 
 # random for a given habitat
-pseudos_per_habitat <- 100
+pseudos_per_habitat <- 150
 pseudoquad_data <- NULL
 pseudoquad_no   <- 1
 for(this_habitat in habitat_names){ # Each habitat
@@ -111,7 +111,7 @@ pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
 plot(pseudo_pca, display = "sites")
 
 library(umap)
-#pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="standardize")
+pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="pa")
 pseudo_umap <- umap(pseudoquad_data_wde)
 pseudo_umap_lyt <- data.frame(pseudo_umap$layout)
 pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(habitat_names, each = pseudos_per_habitat))
@@ -223,6 +223,7 @@ pseudo_not_ash_df <- data.frame(matrix(0,
 colnames(pseudo_not_ash_df) <- colnames(pseudoquad_data_wde)[pseudo_not_ash]
 ash_pseudo <- cbind(ash, pseudo_not_ash_df)
 ash_pseudo <- ash_pseudo[, sort(colnames(ash_pseudo))]
+ash_pseudo <- decostand(ash_pseudo, method="pa")
 
 ash_pred <- predict(pseudo_umap, ash_pseudo)
 colnames(ash_pred) <- c("mean_umap1", "mean_umap2") # Not means, but matches plot
