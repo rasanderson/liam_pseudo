@@ -111,6 +111,7 @@ pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
 plot(pseudo_pca, display = "sites")
 
 library(umap)
+#pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="standardize")
 pseudo_umap <- umap(pseudoquad_data_wde)
 pseudo_umap_lyt <- data.frame(pseudo_umap$layout)
 pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(habitat_names, each = pseudos_per_habitat))
@@ -138,12 +139,13 @@ ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour
   scale_shape_manual(values = 11:22) +
   theme_classic()
 
-ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
+habitat_plt <- ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
   geom_point(size = 3) +
   geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
   geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
   scale_shape_manual(values = 11:22) +
   theme_classic()
+habitat_plt
 
 # Check the Ashtrees data
 ash <- read.csv("data/Ashtrees_perc_final.csv")
@@ -165,13 +167,15 @@ colnames(ash)[colnames(ash)=="Carepanic"] <- "Carepani"
 ash <- subset(ash, select = -Carex_spp)
 # Dricscop missing from pseudos. Check name change
 #   This is actually Dicranum scopularium so recode to Dicrscop
-colnames(ash)[colnames(ash)=="Cricscop"] <- "Dicrscop"
+colnames(ash)[colnames(ash)=="Dricscop"] <- "Dicrscop"
 # Durodili missing from pseudos. Check name change
 #   Recode to Dryodila
 colnames(ash)[colnames(ash)=="Durodili"] <- "Dryodila"
 # Festrubr missing from pseudos. Check name change or Festagg
 #   Unclear why not in pseudos. Consider recoding to Festagg or Festovin
-colnames(ash)[colnames(ash)=="Festrubr"] <- "Festagg"
+# colnames(ash)[colnames(ash)=="Festrubr"] <- "Festagg"
+ash[, "Festovin"] <- ash[, "Festovin"] + ash[, "Festrubr"]
+ash <- subset(ash, select = -Festrubr)
 # Hylosple and Hylosple.1 in Ashtrees
 #   Add Hylosple.1 to Hylosple in Ashtrees
 ash[, "Hylosple"] <- ash[, "Hylosple"] + ash[, "Hylosple.1"]
@@ -179,6 +183,9 @@ ash <- subset(ash, select = -Hylosple.1)
 # Spelling on Hypnjutu Hypnjutl
 #   Recode in Ashtrees to Hypnjutl
 colnames(ash)[colnames(ash)=="Hypnjutu"] <- "Hypnjutl"
+# Luzumult in pseudo and Luzumulti in ash
+#   Recode to Luzumult in ash
+colnames(ash)[colnames(ash)=="Luzumulti"] <- "Luzumult"
 # Plagundu listed as Plagiotundu in ash
 #   Recode to Plagundu
 colnames(ash)[colnames(ash)=="Plagiotundu"] <- "Plagundu"
@@ -188,7 +195,9 @@ ash <- subset(ash, select = -Poaprat)
 # Rumex acetosa and acetosella need checking
 #   Put pseudos alphabetically before cepname to avoid ambiguity
 #   In pseudos Rumeacet=Rumex acetosa, Rumeacet.1=Rumex acetosella
-#   Ash should already be in this order
+#   Ash already in this order but needs abbreviating
+colnames(ash)[colnames(ash)=="Rumeacetosa"] <- "Rumeacet"
+colnames(ash)[colnames(ash)=="Rumeacetosella"] <- "Rumeacet.1"
 # Sphafall not in pseudos. Check name change
 #   Recode to Spharecu.
 colnames(ash)[colnames(ash)=="Sphafall"] <- "Spharecu"
@@ -202,26 +211,32 @@ ash <- subset(ash, select = -Stelalsi)
 #   Presumsably Taraoffi but not clear why coded differently. Safer to omit couple of records.
 ash <- subset(ash, select = -Taraxacu)
 
+# To make a umap prediction, colnames must be identical else error of wrong
+# number of rownames(!) is generated.
+pseudo_not_ash <- !(colnames(pseudoquad_data_wde) %in% colnames(ash))
+ash_not_pseudo <- colnames(ash) %in% colnames(pseudoquad_data_wde)
+
+pseudo_not_ash_df <- data.frame(matrix(0,
+                                       nrow=nrow(ash),
+                                       ncol=as.numeric(summary(pseudo_not_ash)[3]))
+                                )
+colnames(pseudo_not_ash_df) <- colnames(pseudoquad_data_wde)[pseudo_not_ash]
+ash_pseudo <- cbind(ash, pseudo_not_ash_df)
+ash_pseudo <- ash_pseudo[, sort(colnames(ash_pseudo))]
+
+ash_pred <- predict(pseudo_umap, ash_pseudo)
+colnames(ash_pred) <- c("mean_umap1", "mean_umap2") # Not means, but matches plot
+ash_pred <- data.frame(ash_pred)
+ash_pred <- mutate(ash_pred, habitat="Pred")
 
 
-ash_pred <- predict(pseudo_umap, ash)
+habitat_plt <- ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
+  geom_point(size = 3.5) +
+  geom_point(data=ash_pred, aes(x=mean_umap1, y=mean_umap2), size = 3.5) +
+  geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
+  geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
+  scale_shape_manual(values = 11:23) #+
+  #theme_classic()
+habitat_plt
 
 
-# Iris check
-data(iris)
-iris.data = iris[, grep("Sepal|Petal", colnames(iris))]
-iris.labels = iris[, "Species"]
-iris.umap = umap(iris.data)
-iris_lyt <- data.frame(iris.umap$layout)
-iris_lyt <- cbind(iris_lyt, iris.labels)
-
-ggplot(iris_lyt, aes(x=X1, y=X2, colour=iris.labels)) +
-  geom_point() +
-  theme_classic()
-
-iris.wnoise = iris.data + matrix(rnorm(150*40, 0, 0.1), ncol=4)
-colnames(iris.wnoise) = colnames(iris.data)
-head(iris.wnoise, 3)
-
-iris.wnoise.umap = predict(iris.umap, iris.wnoise[,-1])
-head(iris.wnoise.umap, 3)
