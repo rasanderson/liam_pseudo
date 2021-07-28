@@ -50,9 +50,9 @@ habitat_names  <- unique(all_nvc$habitat)
 
 # Begin by creating a few pseudo-quads for each habitat, select a community at 
 # random for a given habitat
-pseudos_per_habitat <- 3
-pseudo_quad_data <- NULL
-pseudo_quad_no   <- 1
+pseudos_per_habitat <- 25
+pseudoquad_data <- NULL
+pseudoquad_no   <- 1
 for(this_habitat in habitat_names){ # Each habitat
   # Select NVC at random within that habitat
   data_this_habitat <- filter(all_nvc, habitat == this_habitat)
@@ -64,7 +64,7 @@ for(this_habitat in habitat_names){ # Each habitat
   for(rnd_nvc in rnd_nvc_names){ # randomly selected NVC in habitat
     rnd_nvc_record <- filter(data_this_habitat, full_nvc_code == rnd_nvc)
     rnd_nvc_record <- mutate(rnd_nvc_record, spp_chosen = FALSE)
-    rnd_nvc_record <- mutate(rnd_nvc_record, pseudo_code = pseudo_quad_no)
+    rnd_nvc_record <- mutate(rnd_nvc_record, pseudo_code = pseudoquad_no)
     const_prob <- runif(1)
     pct_cover <- 0
     print(paste0("Select random NVC: ", rnd_nvc))
@@ -82,25 +82,43 @@ for(this_habitat in habitat_names){ # Each habitat
             rnd_nvc_record$spp_chosen[rnd_spp_no] <- TRUE
             pred_spp_cover <- cover_rnd_pct
             pct_cover <- pct_cover + pred_spp_cover
-            pseudo_record <- data.frame(psuedo_id = pseudo_quad_no,
+            pseudo_record <- data.frame(psuedo_id = pseudoquad_no,
                                         spp_id = rnd_nvc_record$domin[rnd_spp_no],
                                         spp_name = rnd_nvc_record$spp_name[rnd_spp_no],
                                         spp_pct = pred_spp_cover,
                                         nvc_code = rnd_nvc,
                                         habitat_code = this_habitat)
-            pseudo_quad_data <- rbind(pseudo_quad_data, pseudo_record)
+            pseudoquad_data <- rbind(pseudoquad_data, pseudo_record)
           } # End pct cover
         } # End constancy
       } # End check on with critical constancy reached
     } # End pseudoquad
-    pseudo_quad_no <- pseudo_quad_no + 1
+    pseudoquad_no <- pseudoquad_no + 1
   }
 }
 
 # Cannot implement make.cepnames until turned into wide format
-#library(vegan)
-#pseudo_quad_data <- mutate(pseudo_quad_data, abbrname = make.cepnames(spp_name))
-pseudo_quad_data2 <- pseudo_quad_data[, c(1, 3, 4)]
-pseudo_quad_data_wde <- pivot_wider(pseudo_quad_data2, values_from = spp_pct,
+library(vegan)
+pseudoquad_data2 <- pseudoquad_data[, c(1, 3, 4)]
+pseudoquad_data_wde <- pivot_wider(pseudoquad_data2, values_from = spp_pct,
                                     names_from = spp_name,
                                     values_fill = 0)
+colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
+pseudoquad_data_wde <- pseudoquad_data_wde[, -1]
+
+pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
+plot(pseudo_pca, display = "sites")
+
+pseudo_dca <- decorana(decostand(pseudoquad_data_wde, method = "total"))
+pseudo_dca <- decorana(pseudoquad_data_wde)
+plot(pseudo_dca, display = "sites")
+
+library(umap)
+pseudo_umap <- umap(pseudoquad_data_wde)
+pseudo_umap_lyt <- data.frame(pseudo_umap$layout)
+pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(habitat_names, each = pseudos_per_habitat))
+colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "habitat")
+
+library(ggplot2)
+ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap2, colour = habitat)) +
+  geom_point()
