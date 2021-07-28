@@ -50,7 +50,7 @@ habitat_names  <- unique(all_nvc$habitat)
 
 # Begin by creating a few pseudo-quads for each habitat, select a community at 
 # random for a given habitat
-pseudos_per_habitat <- 25
+pseudos_per_habitat <- 100
 pseudoquad_data <- NULL
 pseudoquad_no   <- 1
 for(this_habitat in habitat_names){ # Each habitat
@@ -109,10 +109,6 @@ pseudoquad_data_wde <- pseudoquad_data_wde[, -1]
 pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
 plot(pseudo_pca, display = "sites")
 
-pseudo_dca <- decorana(decostand(pseudoquad_data_wde, method = "total"))
-pseudo_dca <- decorana(pseudoquad_data_wde)
-plot(pseudo_dca, display = "sites")
-
 library(umap)
 pseudo_umap <- umap(pseudoquad_data_wde)
 pseudo_umap_lyt <- data.frame(pseudo_umap$layout)
@@ -120,5 +116,21 @@ pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(habitat_names, each = pseudos_per_
 colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "habitat")
 
 library(ggplot2)
-ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap2, colour = habitat)) +
-  geom_point()
+ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap2, shape = habitat, colour = habitat)) +
+  geom_point(size = 3) +
+  scale_shape_manual(values = 11:22) +
+  theme_classic()
+
+# Group by habitat
+pseudo_umap_lyt %>% 
+  group_by(habitat) %>% 
+  summarise(mean_umap1 = mean(umap1), mean_umap2 = mean(umap2),
+            se_umap1 = sd(umap1)/sqrt(pseudos_per_habitat),
+            se_umap2 = sd(umap2)/sqrt(pseudos_per_habitat)) %>% 
+  ggplot(aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
+         geom_point(size = 3) +
+         geom_errorbar(xmin = mean_umap1 - se_umap1, xmax = mean_umap1 + se_umap1,
+                       ymin = mean_umap2 - se_umap2, xmax = mean_umap2 + se_umap2)
+         scale_shape_manual(values = 11:22) +
+         theme_classic()
+
