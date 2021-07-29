@@ -54,7 +54,7 @@ nvc_names  <- unique(all_nvc$comm_level_code)
 # Generation of pseudoquads at community level commented out for speed
 # # Begin by creating a few pseudo-quads for each habitat, select a community at 
 # # random for a given habitat
-# pseudos_per_community <- 150
+pseudos_per_community <- 150
 # pseudoquad_data <- NULL
 # pseudoquad_no   <- 1
 # for(this_community in nvc_names){ # Each habitat
@@ -104,3 +104,40 @@ nvc_names  <- unique(all_nvc$comm_level_code)
 # It takes about 20 minutes to generate the pseudoquads so skip above and read
 # previously saved results for speed.
 pseudoquad_data <- read.csv("outputs/community_pseudoquads.csv")
+
+# Cannot implement make.cepnames until turned into wide format
+library(vegan)
+pseudoquad_data2 <- pseudoquad_data[, c("psuedo_id", "spp_name", "spp_pct")]
+pseudoquad_data_wde <- pivot_wider(pseudoquad_data2, values_from = spp_pct,
+                                   names_from = spp_name,
+                                   values_fill = 0)
+#pseudoquad_data_wde <- pseudoquad_data_wde[, -1]
+pseudoquad_data_wde <- pseudoquad_data_wde[, sort(colnames(pseudoquad_data_wde))]
+colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
+
+# 
+# library(umap)
+# pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="standardize")
+# pseudo_umap <- umap(pseudoquad_data_wde, random_state=123)
+# pseudo_umap_lyt <- data.frame(pseudo_umap$layout)
+# pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(nvc_names, each = pseudos_per_community))
+# colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "community")
+
+library(uwot)
+pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="pa")
+pseudo_umap <- umap(pseudoquad_data_wde, pca=100, n_components=3, n_threads=4)
+pseudo_umap_lyt <- data.frame(pseudo_umap)
+pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(nvc_names, each = pseudos_per_community))
+colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "umap3", "community")
+
+
+library(ggplot2)
+ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap2, colour = community)) +
+  geom_point(size = 3) +
+  #scale_shape_manual(values = 11:22) +
+  theme_classic()
+
+ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap3, colour = community)) +
+  geom_point(size = 3) +
+  #scale_shape_manual(values = 11:22) +
+  theme_classic()
