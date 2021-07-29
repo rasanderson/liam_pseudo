@@ -241,3 +241,30 @@ habitat_plt <- ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = 
 habitat_plt
 
 
+# Check on similarity to main habitats
+this_quad <- 5
+# Distance from centroids
+dist_to_habitats <- NULL
+prob_to_habitats <- NULL
+for(habitat in 1:no_of_habitats){
+  dist <- 0
+  dist <- dist + (habitat_umap$mean_umap1[habitat] - ash_pred$mean_umap1[this_quad])^2
+  dist <- dist + (habitat_umap$mean_umap2[habitat] - ash_pred$mean_umap2[this_quad])^2
+  dist <- sqrt(dist)
+  dist_to_habitats <- rbind(dist_to_habitats, data.frame(quad=this_quad,
+                                 habitat_name=habitat_umap$habitat[habitat],
+                                 distance=dist))
+}
+# Similarity score
+invsum_dist <- 0
+for(habitat in 1:no_of_habitats){
+  invsum_dist <- invsum_dist + 1/dist_to_habitats$distance[habitat]
+}
+probs <- NULL
+for(habitat in 1:no_of_habitats){
+  prob <- (1/dist_to_habitats$distance[habitat]) / invsum_dist 
+  probs <- rbind(probs, prob)
+}
+dist_to_habitats <- cbind(dist_to_habitats, probs[,1])
+colnames(dist_to_habitats)[4] <- "probability"
+
