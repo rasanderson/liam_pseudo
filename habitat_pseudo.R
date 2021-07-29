@@ -273,3 +273,14 @@ for(ash_quad in 1:nrow(ash_pred)){
   ash_probs <- rbind(ash_probs, dist_to_habitats)
 }
 ash_probs <- subset(ash_probs, select = -distance)
+
+# Now need to see what are the top probabilities for each quadrat
+top1 <- ash_probs %>% 
+  group_by(quad) %>% 
+  arrange(quad, desc(probability)) %>% 
+  top_n(1) %>% 
+  ungroup() 
+summary(as.factor(top1$habitat_name))
+# H, M and U are top 3 habitats with 90% of the quads only use them next as all
+# the quads are from the same site. Small numbers of total mis-classifications
+# e.g. 1% MC, OV and S, 2% SD, 5% W
