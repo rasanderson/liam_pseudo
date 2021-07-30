@@ -107,13 +107,14 @@ pseudoquad_data_wde <- pseudoquad_data_wde[, -1]
 pseudoquad_data_wde <- pseudoquad_data_wde[, sort(colnames(pseudoquad_data_wde))]
 colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
 
-pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
-plot(pseudo_pca, display = "sites")
+#pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
+#plot(pseudo_pca, display = "sites")
 
-library(umap)
+library(uwot)
 pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="pa")
-pseudo_umap <- umap(pseudoquad_data_wde)
-pseudo_umap_lyt <- data.frame(pseudo_umap$layout)
+pseudo_umap <- umap(pseudoquad_data_wde, ret_model = TRUE,
+                    y = as.factor(rep(habitat_names, each = pseudos_per_habitat)))
+pseudo_umap_lyt <- data.frame(pseudo_umap$embedding)
 pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(habitat_names, each = pseudos_per_habitat))
 colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "habitat")
 
@@ -140,9 +141,9 @@ ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour
   theme_classic()
 
 habitat_plt <- ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
-  geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
+  geom_point(size = 4) +
+  #geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
+  #geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
   scale_shape_manual(values = 11:22) +
   theme_classic()
 habitat_plt
@@ -225,7 +226,9 @@ ash_pseudo <- cbind(ash, pseudo_not_ash_df)
 ash_pseudo <- ash_pseudo[, sort(colnames(ash_pseudo))]
 ash_pseudo <- decostand(ash_pseudo, method="pa")
 
-ash_pred <- predict(pseudo_umap, ash_pseudo)
+#ash_pred <- predict(pseudo_umap, ash_pseudo)
+ash_transform <- umap_transform(ash_pseudo, pseudo_umap, verbose=TRUE)
+ash_pred <- data.frame(ash_transform)
 colnames(ash_pred) <- c("mean_umap1", "mean_umap2") # Not means, but matches plot
 ash_pred <- data.frame(ash_pred)
 ash_pred <- mutate(ash_pred, habitat="Pred")
@@ -234,8 +237,8 @@ ash_pred <- mutate(ash_pred, habitat="Pred")
 habitat_plt <- ggplot(habitat_umap, aes(x = mean_umap1, y = mean_umap2, shape = habitat, colour = habitat)) +
   geom_point(size = 3.5) +
   geom_point(data=ash_pred, aes(x=mean_umap1, y=mean_umap2), size = 3.5) +
-  geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
-  geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
+  #geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
+  #geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
   scale_shape_manual(values = 11:23) #+
   #theme_classic()
 habitat_plt
@@ -280,7 +283,7 @@ top1 <- ash_probs %>%
   arrange(quad, desc(probability)) %>% 
   top_n(1) %>% 
   ungroup() 
-summary(as.factor(top1$habitat_name))
+summary(as.factor(top1$habitat_nam))
 # H, M and U are top 3 habitats with 90% of the quads only use them next as all
 # the quads are from the same site. Small numbers of total mis-classifications
 # e.g. 1% MC, OV and S, 2% SD, 5% W
