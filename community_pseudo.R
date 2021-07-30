@@ -125,10 +125,11 @@ colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
 
 library(uwot)
 pseudoquad_data_wde <- decostand(pseudoquad_data_wde, method="pa")
-pseudo_umap <- umap(pseudoquad_data_wde, pca=100, n_components=3, n_threads=4)
-pseudo_umap_lyt <- data.frame(pseudo_umap)
+pseudo_umap <- umap(pseudoquad_data_wde, pca=100, ret_model = TRUE,
+                    y = as.factor(rep(nvc_names, each = pseudos_per_community)))
+pseudo_umap_lyt <- data.frame(pseudo_umap$embedding)
 pseudo_umap_lyt <- cbind(pseudo_umap_lyt, rep(nvc_names, each = pseudos_per_community))
-colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "umap3", "community")
+colnames(pseudo_umap_lyt) <- c("umap1", "umap2", "community")
 
 
 library(ggplot2)
@@ -137,7 +138,150 @@ ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap2, colour = community)) +
   #scale_shape_manual(values = 11:22) +
   theme_classic()
 
-ggplot(pseudo_umap_lyt, aes(x = umap1, y = umap3, colour = community)) +
+community_umap <- pseudo_umap_lyt %>% 
+  group_by(community) %>% 
+  summarise(mean_umap1 = mean(umap1), mean_umap2 = mean(umap2),
+            se_umap1 = sd(umap1)/sqrt(pseudos_per_community),
+            se_umap2 = sd(umap2)/sqrt(pseudos_per_community),
+            ci_umap1 = qt(0.05/2, pseudos_per_community-1, lower.tail=FALSE) * se_umap1,
+            ci_umap2 = qt(0.05/2, pseudos_per_community-1, lower.tail=FALSE) * se_umap2)
+
+ggplot(community_umap, aes(x = mean_umap1, y = mean_umap2, colour = community)) +
   geom_point(size = 3) +
+  #geom_errorbar(aes(xmin = mean_umap1 - se_umap1, xmax = mean_umap1 + se_umap1)) +
+  #geom_errorbar(aes(ymin = mean_umap2 - se_umap2, ymax = mean_umap2 + se_umap2)) +
   #scale_shape_manual(values = 11:22) +
   theme_classic()
+
+
+
+# Check the Ashtrees data
+ash <- read.csv("data/Ashtrees_perc_final.csv")
+ash <- ash[, -1]
+# Ensure abbreviated names match
+# pseudonam <- colnames(pseudoquad_data_wde)
+# View(sort(pseudonam))
+# ashnam <- colnames(ash)
+# View(sort(ashnam))
+# Agrostis_spp to Agrocapi in Ashtrees;
+#   Recode to Agrocapi adding values together
+ash[, "Agrocapi"] <- ash[, "Agrocapi"] + ash[, "Agrostis_spp"]
+ash <- subset(ash, select = -Agrostis_spp)
+# Carepani listed as Carepani and Carepani.1 in pseudos and Carepanic in ash;
+#   pseudos Carepani=Carex panicea, Carepani.1=Carex paniculata; ash is panicea
+colnames(ash)[colnames(ash)=="Carepanic"] <- "Carepani"
+# Carex_spp needs changing;
+#   Only one record with low abundance so delete
+ash <- subset(ash, select = -Carex_spp)
+# Dricscop missing from pseudos. Check name change
+#   This is actually Dicranum scopularium so recode to Dicrscop
+colnames(ash)[colnames(ash)=="Dricscop"] <- "Dicrscop"
+# Durodili missing from pseudos. Check name change
+#   Recode to Dryodila
+colnames(ash)[colnames(ash)=="Durodili"] <- "Dryodila"
+# Festrubr missing from pseudos. Check name change or Festagg
+#   Unclear why not in pseudos. Consider recoding to Festagg or Festovin
+# colnames(ash)[colnames(ash)=="Festrubr"] <- "Festagg"
+ash[, "Festovin"] <- ash[, "Festovin"] + ash[, "Festrubr"]
+ash <- subset(ash, select = -Festrubr)
+# Hylosple and Hylosple.1 in Ashtrees
+#   Add Hylosple.1 to Hylosple in Ashtrees
+ash[, "Hylosple"] <- ash[, "Hylosple"] + ash[, "Hylosple.1"]
+ash <- subset(ash, select = -Hylosple.1)
+# Spelling on Hypnjutu Hypnjutl
+#   Recode in Ashtrees to Hypnjutl
+colnames(ash)[colnames(ash)=="Hypnjutu"] <- "Hypnjutl"
+# Luzumult in pseudo and Luzumulti in ash
+#   Recode to Luzumult in ash
+colnames(ash)[colnames(ash)=="Luzumulti"] <- "Luzumult"
+# Plagundu listed as Plagiotundu in ash
+#   Recode to Plagundu
+colnames(ash)[colnames(ash)=="Plagiotundu"] <- "Plagundu"
+# Poaprat missing from pseudos. Check name change
+#   Exists in NVC floristics table but not selected. Delete from Ashtrees
+ash <- subset(ash, select = -Poaprat)
+# Rumex acetosa and acetosella need checking
+#   Put pseudos alphabetically before cepname to avoid ambiguity
+#   In pseudos Rumeacet=Rumex acetosa, Rumeacet.1=Rumex acetosella
+#   Ash already in this order but needs abbreviating
+colnames(ash)[colnames(ash)=="Rumeacetosa"] <- "Rumeacet"
+colnames(ash)[colnames(ash)=="Rumeacetosella"] <- "Rumeacet.1"
+# Sphafall not in pseudos. Check name change
+#   Recode to Spharecu.
+colnames(ash)[colnames(ash)=="Sphafall"] <- "Spharecu"
+# sphapalu lower case s in Ashtrees
+#   Reocde to Sphapalu
+colnames(ash)[colnames(ash)=="sphapalu"] <- "Sphapalu"
+# Stelalsi not in pseudos but check Stelagg
+#   Only couple of records and delete from Ashtrees
+ash <- subset(ash, select = -Stelalsi)
+# Taraxacu needs checking in ash and pseudos
+#   Presumsably Taraoffi but not clear why coded differently. Safer to omit couple of records.
+ash <- subset(ash, select = -Taraxacu)
+
+# To make a umap prediction, colnames must be identical else error of wrong
+# number of rownames(!) is generated.
+pseudo_not_ash <- !(colnames(pseudoquad_data_wde) %in% colnames(ash))
+ash_not_pseudo <- colnames(ash) %in% colnames(pseudoquad_data_wde)
+
+pseudo_not_ash_df <- data.frame(matrix(0,
+                                       nrow=nrow(ash),
+                                       ncol=as.numeric(summary(pseudo_not_ash)[3]))
+)
+colnames(pseudo_not_ash_df) <- colnames(pseudoquad_data_wde)[pseudo_not_ash]
+ash_pseudo <- cbind(ash, pseudo_not_ash_df)
+ash_pseudo <- ash_pseudo[, sort(colnames(ash_pseudo))]
+ash_pseudo <- decostand(ash_pseudo, method="pa")
+
+#ash_pred <- predict(pseudo_umap, ash_pseudo)
+ash_transform <- umap_transform(ash_pseudo, pseudo_umap, verbose=TRUE)
+ash_pred <- data.frame(ash_transform)
+colnames(ash_pred) <- c("mean_umap1", "mean_umap2") # Not means, but matches plot
+ash_pred <- data.frame(ash_pred)
+ash_pred <- mutate(ash_pred, community="Pred")
+
+
+habitat_plt <- ggplot(community_umap, aes(x = mean_umap1, y = mean_umap2, colour = community)) +
+  geom_point(size = 3.5) +
+  geom_point(data=ash_pred, aes(x=mean_umap1, y=mean_umap2), size = 1, color="black") +
+  #geom_errorbar(aes(xmin = mean_umap1 - ci_umap1, xmax = mean_umap1 + ci_umap1)) +
+  #geom_errorbar(aes(ymin = mean_umap2 - ci_umap2, ymax = mean_umap2 + ci_umap2)) +
+  scale_shape_manual(values = 11:23) #+
+#theme_classic()
+habitat_plt
+
+
+
+# Check on similarity to main habitats
+ash_probs <- NULL
+for(ash_quad in 1:nrow(ash_pred)){
+  this_quad <- ash_quad
+  # Distance from centroids
+  dist_to_nvcs <- NULL
+  prob_to_nvcs <- NULL
+  for(nvc in 1:no_of_nvcs){
+    dist <- 0
+    dist <- dist + (community_umap$mean_umap1[nvc] - ash_pred$mean_umap1[this_quad])^2
+    dist <- dist + (community_umap$mean_umap2[nvc] - ash_pred$mean_umap2[this_quad])^2
+    dist <- sqrt(dist)
+    dist_to_nvcs <- rbind(dist_to_nvcs,
+                              data.frame(quad=this_quad,
+                                         nvc_nam=community_umap$community[nvc],
+                                         distance=dist))
+  }
+  # Similarity score
+  invsum_dist <- 0
+  for(nvc in 1:no_of_nvcs){
+    invsum_dist <- invsum_dist + 1/dist_to_nvcs$distance[nvc]
+  }
+  probs <- NULL
+  for(nvc in 1:no_of_nvcs){
+    prob <- (1/dist_to_nvcs$distance[nvc]) / invsum_dist 
+    probs <- rbind(probs, prob)
+  }
+  dist_to_nvcs <- cbind(dist_to_nvcs, probs[,1])
+  colnames(dist_to_nvcs)[4] <- "probability"
+  ash_probs <- rbind(ash_probs, dist_to_nvcs)
+}
+ash_probs <- subset(ash_probs, select = -distance)
+
