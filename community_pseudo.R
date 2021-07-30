@@ -285,3 +285,10 @@ for(ash_quad in 1:nrow(ash_pred)){
 }
 ash_probs <- subset(ash_probs, select = -distance)
 
+# Now need to see what are the top probabilities for each quadrat
+top1 <- ash_probs %>% 
+  group_by(quad) %>% 
+  arrange(quad, desc(probability)) %>% 
+  top_n(1) %>% 
+  ungroup() 
+summary(as.factor(top1$nvc_nam))
