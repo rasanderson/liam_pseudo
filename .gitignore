@@ -39,3 +39,4 @@ vignettes/*.pdf
 .Renviron
 
 softorder1dcnn/santander/*
+softorder1dcnn/lightning_logs*
