@@ -329,3 +329,20 @@ trainer.test(model, DataLoader(valid_tensor_dset, batch_size=2048, shuffle=False
 trainer.test(model, DataLoader(test_tensor_dset, batch_size=2048, shuffle=False, num_workers=4))
 ```
 
+```{python}
+y_pred_proba = []
+for batch in DataLoader(test_tensor_dset, batch_size=2048, shuffle=False, num_workers=4):
+    inputs = batch[0].to(device)
+    outputs = model(inputs)
+    y_pred_proba.append(outputs.detach().cpu().numpy())
+y_pred_proba = np.concatenate(y_pred_proba)
+
+
+# Get the true labels for the test data
+y_true = test_tensor_dset.tensors[1].numpy()
+
+# Calculate the ROC AUC score
+roc_auc = roc_auc_score(y_true, y_pred_proba, multi_class='ovr')
+
+```
+
