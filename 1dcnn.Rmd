@@ -286,7 +286,7 @@ class SoftOrdering1DCNN(pl.LightningModule):
 ```{python}
 model = SoftOrdering1DCNN(
     input_dim=len(input_features), 
-    output_dim=2, # Originally 1 (for 2 binary outputs); change to 2 for 3 ?
+    output_dim=3, # Originally 1 (for 2 binary outputs); change to 2 for 3 ?
     sign_size=16, 
     cha_input=64, 
     cha_hidden=64, 
