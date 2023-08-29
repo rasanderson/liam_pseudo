@@ -9,6 +9,9 @@ In this notebook we will apply the neural network architecture winner of the 2nd
 
 The results of this network (which we call SoftOrdering1DCNN) are benchmarked against a plain MLP and LightGBM.
 
+Also info from this site https://medium.com/spikelab/convolutional-neural-networks-on-tabular-datasets-part-1-4abdd67795b6
+
+
 ```{r}
 library(reticulate)
 use_condaenv("torch")
@@ -68,9 +71,7 @@ test_index = index[int(0.8*n):]
 train_dset = dataset.loc[train_index].reset_index(drop=True)
 valid_dset = dataset.loc[valid_index].reset_index(drop=True)
 test_dset = dataset.loc[test_index].reset_index(drop=True)
-```
 
-```{python}
 input_features = dataset.columns[2:].tolist()
 target = "target"
 ```
@@ -80,21 +81,41 @@ target = "target"
 
 train_tensor_dset = TensorDataset(
     torch.tensor(train_dset[input_features].values, dtype=torch.float),
-    torch.tensor(train_dset[target].values.reshape(-1,1), dtype=torch.float)
+    #torch.tensor(train_dset[target].values.reshape(-1,1), dtype=torch.float)
+    torch.tensor(train_dset[target].values, dtype=torch.long)
+    #torch.tensor(train_dset[target].values.reshape(-1,3), dtype=torch.float)
+    #torch.tensor(train_dset[target].values.reshape(-1), dtype=torch.long)
 )
 
 valid_tensor_dset = TensorDataset(
     torch.tensor(valid_dset[input_features].values, dtype=torch.float),
-    torch.tensor(valid_dset[target].values.reshape(-1,1), dtype=torch.float)
+    #torch.tensor(valid_dset[target].values.reshape(-1,1), dtype=torch.float)
+    torch.tensor(valid_dset[target].values, dtype=torch.long)
+    #torch.tensor(train_dset[target].values.reshape(-1,3), dtype=torch.float)
+    #torch.tensor(train_dset[target].values.reshape(-1), dtype=torch.long)
 )
 
 test_tensor_dset = TensorDataset(
     torch.tensor(test_dset[input_features].values, dtype=torch.float),
-    torch.tensor(test_dset[target].values.reshape(-1,1), dtype=torch.float) 
+    #torch.tensor(test_dset[target].values.reshape(-1,1), dtype=torch.float) 
+    torch.tensor(test_dset[target].values, dtype=torch.long) 
+    #torch.tensor(train_dset[target].values.reshape(-1,3), dtype=torch.float)
+    #torch.tensor(train_dset[target].values.reshape(-1), dtype=torch.long)
 )
 ```
 
 ## SoftOrdering1DCNN
+Parameters used:
+
+* input_dim: the number of features at input.
+* output_dim: the number of target values to fit.
+* sign_size: the size of the signals to feed the first convolutional layer.
+* cha_input: number of channels to feed the first convolutional layer.
+* cha_hidden: number of channels computed by the hidden convolutional layers.
+* K: channel increase rate for the first convolutional layer. The first layer will increase channels from cha_input to K*cha_input.
+* dropout_input: dropout rate to apply at the input.
+* dropout_hidden: dropout rate to apply at the hidden convolutional layers.
+* dropout_output: dropout rate to apply in the last fully connected layer.
 
 ```{python}
 class SoftOrdering1DCNN(pl.LightningModule):
@@ -184,7 +205,8 @@ class SoftOrdering1DCNN(pl.LightningModule):
         dense2 = nn.Linear(output_size, output_dim, bias=False)
         self.dense2 = nn.utils.weight_norm(dense2)
 
-        self.loss = nn.BCEWithLogitsLoss()
+        #self.loss = nn.BCEWithLogitsLoss()
+        self.loss = nn.CrossEntropyLoss()
 
     def forward(self, x):
         x = self.batch_norm1(x)
@@ -264,7 +286,7 @@ class SoftOrdering1DCNN(pl.LightningModule):
 ```{python}
 model = SoftOrdering1DCNN(
     input_dim=len(input_features), 
-    output_dim=1, 
+    output_dim=2, # Originally 1 (for 2 binary outputs); change to 2 for 3 ?
     sign_size=16, 
     cha_input=64, 
     cha_hidden=64, 
