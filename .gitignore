@@ -40,3 +40,4 @@ vignettes/*.pdf
 
 softorder1dcnn/santander/*
 softorder1dcnn/lightning_logs*
+lightning_logs*
