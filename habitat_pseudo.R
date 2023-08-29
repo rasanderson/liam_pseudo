@@ -49,7 +49,7 @@ no_of_habitats <- length(unique(all_nvc$habitat))
 habitat_names  <- unique(all_nvc$habitat)
 
 # For testing of deep-learning approach only, just give it a few habitats
-habitat_names <- c("CG", "U")
+habitat_names <- c("CG", "MG", "U")
 
 # Begin by creating a few pseudo-quads for each habitat, select a community at 
 # random for a given habitat
