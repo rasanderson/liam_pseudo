@@ -49,7 +49,7 @@ no_of_habitats <- length(unique(all_nvc$habitat))
 habitat_names  <- unique(all_nvc$habitat)
 
 # For testing of deep-learning approach only, just give it a few habitats
-habitat_names <- c("CG", "MG", "U")
+habitat_names <- c("CG", "U")
 
 # Begin by creating a few pseudo-quads for each habitat, select a community at 
 # random for a given habitat
@@ -113,7 +113,7 @@ colnames(pseudoquad_data_wde) <- make.cepnames(colnames(pseudoquad_data_wde))
 target <- as.factor(rep(0 : (length(habitat_names) - 1), each = pseudos_per_habitat))
 ID_Code <- as.character(row.names(pseudoquad_data_wde))
 pseudos <- cbind(ID_Code, target, pseudoquad_data_wde)
-write.table(pseudos, "data/pseudos.csv", sep = ",", row.names = FALSE, quote = FALSE)
+write.table(pseudos, "data/pseudos2.csv", sep = ",", row.names = FALSE, quote = FALSE)
 
 #pseudo_pca <- rda(decostand(pseudoquad_data_wde, method = "hellinger"))
 #plot(pseudo_pca, display = "sites")
