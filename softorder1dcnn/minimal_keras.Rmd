@@ -1,0 +1,49 @@
+---
+title: "Minimal keras"
+author: "Roy Sanderson"
+date: '2023-08-30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+use_condaenv("tensorflow")
+```
+```
+# Basic Python Keras as a function
+https://www.keep-current.dev/convolution-networks-on-tabular-data/
+
+```{python}
+def create_cnn( num_columns, num_labels, hidden_units, dropout_rates, label_smoothing, learning_rate ):
+    inp = Input(shape=(num_columns,))
+    x = BatchNormalization()(inp)
+    x = Dropout(dropout_rates[0])(x)
+    x = WeightNormalization(Dense(4096))(x)
+    x = Reshape((256, 16))(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.1)(x)
+    x = WeightNormalization(Conv1D(filters = 16, kernel_size = 5, activation = swish, use_bias = False, padding = 'SAME'))(x)
+    x = AveragePooling1D(pool_size = 2)(x)
+    xs = x
+    x = BatchNormalization()(x)
+    x = Dropout(0.1)(x)
+    x = WeightNormalization(Conv1D(filters = 16, kernel_size = 3, activation = swish, use_bias = True, padding = 'SAME'))(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.1)(x)
+    x = WeightNormalization(Conv1D(filters = 16, kernel_size = 3, activation = swish, use_bias = True, padding = 'SAME'))(x)
+    x = Multiply()([x, xs])
+    x = MaxPool1D(pool_size = 4, strides = 2)(x)
+    x = Flatten()(x)
+    x = BatchNormalization()(x)
+    x = Activation(swish)(x)
+    x = Dense(num_labels)(x)
+    out = Activation('sigmoid')(x)
+    model = Model(inputs=inp, outputs=out)
+    model.summary()
+    return model
+```
+
