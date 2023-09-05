@@ -21,6 +21,7 @@
 # outside of the current session
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 
 from tensorflow import keras
@@ -57,6 +58,17 @@ model.compile(
   metrics=["mae"]
   )
 
+# Randomise data
+indices_permutation = np.random.permutation(len(X_train))
+shuffled_inputs = X_train.iloc[indices_permutation]
+shuffled_targets = y_train.iloc[indices_permutation]
+# Split into 30:70
+num_validation_samples = int(0.3 * len(X_train))
+val_inputs = shuffled_inputs[:num_validation_samples]
+val_targets = shuffled_targets[:num_validation_samples]
+training_inputs = shuffled_inputs[num_validation_samples:]
+training_targets = shuffled_targets[num_validation_samples:]
+
 early_stopping = keras.callbacks.EarlyStopping(
     patience=10,
     min_delta=0.001,
@@ -64,14 +76,14 @@ early_stopping = keras.callbacks.EarlyStopping(
 )
 
 history = model.fit(
-    X_train, y_train,
-    # validation_data=(X_val, y_val),
+    training_inputs, training_targets,
+    validation_data=(val_inputs, val_targets),
     batch_size=32,
     epochs=5,
-    validation_split=0.2,
     callbacks=[early_stopping],
 )
 
+loss_and_metrics = model.evaluate(val_inputs, val_targets, batch_size=128)
 
 loss = history.history["mae"]
 val_loss = history.history["val_mae"]
