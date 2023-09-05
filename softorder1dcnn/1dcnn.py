@@ -28,7 +28,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 
-dataset_train = pd.read_csv("../data/pseudos.csv")
+dataset_train = pd.read_csv("../data/pseudos3.csv")
 target_col = 'target'
 
 
