@@ -53,9 +53,9 @@ model = keras.Sequential([
 ])
 
 model.compile(
-  optimizer='adam',
-  loss='mse',
-  metrics=["mae"]
+  optimizer='rmsprop',
+  loss='binary_crossentropy',
+  metrics=["accuracy"]
   )
 
 # Randomise data
@@ -79,18 +79,25 @@ history = model.fit(
     training_inputs, training_targets,
     validation_data=(val_inputs, val_targets),
     batch_size=32,
-    epochs=5,
+    epochs=100,
     callbacks=[early_stopping],
 )
 
 loss_and_metrics = model.evaluate(val_inputs, val_targets, batch_size=128)
 
-loss = history.history["mae"]
-val_loss = history.history["val_mae"]
+accuracy = history.history["accuracy"]
+val_accuracy = history.history["val_accuracy"]
+loss = history.history["loss"]
+val_loss = history.history["val_loss"]
 epochs = range(1, len(loss) + 1)
 plt.figure()
-plt.plot(epochs, loss, "bo", label="Training MAE")
-plt.plot(epochs, val_loss, "b", label="Validation MAE")
-plt.title("Training and validation MAE")
+plt.plot(epochs, accuracy, "bo", label="Training accuracy")
+plt.plot(epochs, val_accuracy, "b", label="Validation accuracy")
+plt.title("Training and validation accuracy")
+plt.legend()
+plt.figure()
+plt.plot(epochs, loss, "bo", label="Training loss")
+plt.plot(epochs, val_loss, "b", label="Validation loss")
+plt.title("Training and validation loss")
 plt.legend()
 plt.show()
