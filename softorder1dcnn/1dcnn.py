@@ -1,28 +1,27 @@
 # Not working properly in RStudio or Visual Studio
 
-# Resort to ipython and plain text editor
+# Resort to ipython and Spyder IDE
+
+# This notebook is inspired by the [2nd place solution of Mechanisms of Action
+# (MoA)Prediction](https://www.kaggle.com/c/lish-moa/discussion/202256).
 
 
-# This notebook is inspired by the [2nd place solution of Mechanisms of Action (MoA)
-# Prediction](https://www.kaggle.com/c/lish-moa/discussion/202256).
-
-# This Python 3 environment comes with many helpful analytics libraries installed
-# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
-# For example, here's several helpful packages to load
-
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np   # linear algebra
+import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 
 # Input data files are available in the read-only "../input/" directory
-# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list
+# all files under the input directory
 
 # import os
 # for dirname, _, filenames in os.walk('/kaggle/input'):
 #     for filename in filenames:
 #         print(os.path.join(dirname, filename))
 
-# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
-# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+# You can write up to 20GB to the current directory (/kaggle/working/) that
+# gets preserved as output when you create a version using "Save & Run All"
+# You can also write temporary files to /kaggle/temp/, but they won't be saved
+# outside of the current session
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
@@ -57,11 +56,11 @@ X_test.head(2)
 X_val = X_test
 
 # cv = KFold(n_splits=5, shuffle=True, random_state=7)
-# 
+#
 # y_preds = []
 # models = []
 # oof_train = np.zeros((len(X_train),))
-# 
+#
 # for fold_id, (train_index, valid_index) in enumerate(cv.split(X_train, y_train)):
 #     X_tr = X_train.loc[train_index, :]
 #     X_val = X_train.loc[valid_index, :]
@@ -69,12 +68,12 @@ X_val = X_test
 #     y_val = y_train.loc[valid_index]
 
 model = keras.Sequential([
-#   layers.BatchNormalization(),
-#   layers.Dropout(0.1),
+    #   layers.BatchNormalization(),
+    #   layers.Dropout(0.1),
     layers.Dense(4096, activation='relu'),
     layers.Reshape((256, 16)),
-#   layers.BatchNormalization(),
-#   layers.Dropout(0.1),
+    #   layers.BatchNormalization(),
+    #   layers.Dropout(0.1),
     layers.Conv1D(filters=16, kernel_size=5, strides=1, activation='relu'),
     layers.MaxPooling1D(pool_size=2),
     layers.Flatten(),
@@ -87,25 +86,24 @@ model.compile(
   loss='mse',
   metrics=[keras.metrics.RootMeanSquaredError()]
   )
-  
+
 early_stopping = keras.callbacks.EarlyStopping(
     patience=10,
     min_delta=0.001,
     restore_best_weights=True,
 )
-    
+
 model.fit(
     X_train, y_train,
-    #validation_data=(X_val, y_val),
+    # validation_data=(X_val, y_val),
     batch_size=32,
     epochs=5,
-    validation_split = 0.2,
+    validation_split=0.2,
     callbacks=[early_stopping],
 )
 
-    oof_train[valid_index] = model.predict(X_val).reshape(1, -1)[0]
-    y_pred = model.predict(X_test).reshape(1, -1)[0]
+# oof_train[valid_index] = model.predict(X_val).reshape(1, -1)[0]
+y_pred = model.predict(X_test).reshape(1, -1)[0]
 
-    y_preds.append(y_pred)
-    models.append(model)
-
+y_pred.append(y_pred)
+model.append(model)
