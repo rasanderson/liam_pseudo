@@ -38,12 +38,12 @@ X_train.head(2)
 y_train.head(2)
 
 model = keras.Sequential([
-    #   layers.BatchNormalization(),
-    #   layers.Dropout(0.1),
+    layers.BatchNormalization(),
+    layers.Dropout(0.1),
     layers.Dense(4096, activation='relu'),
     layers.Reshape((256, 16)),
-    #   layers.BatchNormalization(),
-    #   layers.Dropout(0.1),
+    layers.BatchNormalization(),
+    layers.Dropout(0.1),
     layers.Conv1D(filters=16, kernel_size=5, strides=1, activation='relu'),
     layers.MaxPooling1D(pool_size=2),
     layers.Flatten(),
