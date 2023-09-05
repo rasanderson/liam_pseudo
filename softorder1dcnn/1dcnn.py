@@ -28,7 +28,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 
-dataset_train = pd.read_csv("../data/pseudos2.csv")
+dataset_train = pd.read_csv("../data/pseudos.csv")
 target_col = 'target'
 
 
@@ -49,12 +49,12 @@ model = keras.Sequential([
     layers.MaxPooling1D(pool_size=2),
     layers.Flatten(),
     layers.Dense(16, activation='relu'),
-    layers.Dense(1, activation='linear'),
+    layers.Dense(3, activation='linear'),
 ])
 
 model.compile(
   optimizer='rmsprop',
-  loss='binary_crossentropy',
+  loss='sparse_categorical_crossentropy',
   metrics=["accuracy"]
   )
 
@@ -69,18 +69,20 @@ val_targets = shuffled_targets[:num_validation_samples]
 training_inputs = shuffled_inputs[num_validation_samples:]
 training_targets = shuffled_targets[num_validation_samples:]
 
-early_stopping = keras.callbacks.EarlyStopping(
-    patience=10,
-    min_delta=0.001,
-    restore_best_weights=True,
-)
+#
+# early_stopping = keras.callbacks.EarlyStopping(
+# patience=10,
+# min_delta=0.001,
+# restore_best_weights=True,
+# )
+#
 
 history = model.fit(
     training_inputs, training_targets,
     validation_data=(val_inputs, val_targets),
     batch_size=32,
-    epochs=100,
-    callbacks=[early_stopping],
+    epochs=100
+    # callbacks=[early_stopping],
 )
 
 loss_and_metrics = model.evaluate(val_inputs, val_targets, batch_size=128)
