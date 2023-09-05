@@ -6,9 +6,6 @@
 # (MoA)Prediction](https://www.kaggle.com/c/lish-moa/discussion/202256).
 
 
-import numpy as np   # linear algebra
-import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
-
 # Input data files are available in the read-only "../input/" directory
 # For example, running this (by clicking run or pressing Shift+Enter) will list
 # all files under the input directory
@@ -23,50 +20,22 @@ import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 # You can also write temporary files to /kaggle/temp/, but they won't be saved
 # outside of the current session
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold
-from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
+
 from tensorflow import keras
 from tensorflow.keras import layers
 
 
-# train = pd.read_csv('../input/tabular-playground-series-jan-2021/train.csv')
-# test = pd.read_csv('../input/tabular-playground-series-jan-2021/test.csv')
-
 dataset_train = pd.read_csv("../data/pseudos2.csv")
-# dataset_test = pd.read_csv("santander/test.csv")
-
-# numerical_cols = [f'cont{i}' for i in range(1, 15)]
 target_col = 'target'
 
-# for c in numerical_cols:
-#     prep = StandardScaler()
-#     train[c] = prep.fit_transform(train[[c]])
-#     test[c] = prep.transform(test[[c]])
 
-X_train = dataset_train.drop(['ID_Code','target'], axis=1)
+X_train = dataset_train.drop(['ID_Code', 'target'], axis=1)
 y_train = dataset_train['target']
-# X_test = dataset_test.drop('ID_code', axis=1)
 
 X_train.head(2)
 y_train.head(2)
-# X_test.head(2)
-
-# Just for now, use X_test as validation. Sort out later
-# X_val = X_test
-
-# cv = KFold(n_splits=5, shuffle=True, random_state=7)
-#
-# y_preds = []
-# models = []
-# oof_train = np.zeros((len(X_train),))
-#
-# for fold_id, (train_index, valid_index) in enumerate(cv.split(X_train, y_train)):
-#     X_tr = X_train.loc[train_index, :]
-#     X_val = X_train.loc[valid_index, :]
-#     y_tr = y_train.loc[train_index]
-#     y_val = y_train.loc[valid_index]
 
 model = keras.Sequential([
     #   layers.BatchNormalization(),
@@ -86,7 +55,6 @@ model.compile(
   optimizer='adam',
   loss='mse',
   metrics=["mae"]
-  # metrics=[keras.metrics.RootMeanSquaredError()]
   )
 
 early_stopping = keras.callbacks.EarlyStopping(
@@ -104,7 +72,7 @@ history = model.fit(
     callbacks=[early_stopping],
 )
 
-import matplotlib.pyplot as plt
+
 loss = history.history["mae"]
 val_loss = history.history["val_mae"]
 epochs = range(1, len(loss) + 1)
@@ -114,12 +82,3 @@ plt.plot(epochs, val_loss, "b", label="Validation MAE")
 plt.title("Training and validation MAE")
 plt.legend()
 plt.show()
-
-
-
-
-# oof_train[valid_index] = model.predict(X_val).reshape(1, -1)[0]
-# y_pred = model.predict(X_test).reshape(1, -1)[0]
-
-# y_pred.append(y_pred)
-# model.append(model)
